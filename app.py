@@ -41,7 +41,7 @@ def predict(model, img):
     infected_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
     total_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
 
-    if predicted_class != 'Hypodontia':
+    if predicted_class != 'Healthy':
         segmentation_predictions = segmentation_result['predictions']
         for seg_pred in segmentation_predictions:
             if seg_pred['confidence'] > 0.4:
@@ -61,7 +61,7 @@ def predict(model, img):
     infected_area_pixels = np.count_nonzero(infected_area_mask)
     total_area_pixels = np.count_nonzero(total_area_mask)
 
-    if total_area_pixels > 0 and predicted_class != 'Hypodontia':
+    if total_area_pixels > 0 and predicted_class != 'Healthy':
         infected_area_percentage = (infected_area_pixels / total_area_pixels) * 100 + 5
     else:
         infected_area_percentage = 0
@@ -87,7 +87,7 @@ if uploaded_file is not None:
 
     st.image(img, caption="Uploaded Dental Image", use_container_width=True)
 
-    model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
+    model_path = os.path.join(os.getcwd(), "dental_problems.h5")
     try:
         model = tf.keras.models.load_model(model_path)
     except Exception as e:
