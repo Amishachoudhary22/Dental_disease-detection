@@ -36,12 +36,11 @@ def predict(model, img):
     predicted_class = class_names[np.argmax(predictions[0])]
     confidence = round(100 * (np.max(predictions[0])), 2)
 
-    # Call Roboflow API for segmentation
-    segmentation_result = CLIENT.infer(img, model_id="dental_disease_detection/2")  # Replace model_id!
+    segmentation_result = CLIENT.infer(img, model_id="plant-disease-detection-ryzqa/7")
     infected_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
-    total_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
+    total_leaf_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
 
-    if predicted_class != 'Hypodontia':
+    if predicted_class != 'Gingivitis':
         segmentation_predictions = segmentation_result['predictions']
         for seg_pred in segmentation_predictions:
             if seg_pred['confidence'] > 0.4:
@@ -50,25 +49,24 @@ def predict(model, img):
                 infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
 
     # Total mouth/dental area segmentation
-    mouth_segmentation_result = CLIENT2.infer(img, model_id="dental_disease_detection/2")  # Replace model_id!
-    mouth_segmentation_predictions = mouth_segmentation_result['predictions']
-    for mouth_seg_pred in mouth_segmentation_predictions:
-        if mouth_seg_pred['confidence'] > 0.4:
-            mouth_points = mouth_seg_pred['points']
-            mouth_single_mask = create_mask_from_points(img.shape, mouth_points)
-            total_area_mask = cv2.bitwise_or(total_area_mask, mouth_single_mask)
+     leaf_segmentation_result = CLIENT2.infer(img, model_id="segmentasi-daun/4")
+    leaf_segmentation_predictions = leaf_segmentation_result['predictions']
+    for leaf_seg_pred in leaf_segmentation_predictions:
+        if leaf_seg_pred['confidence'] > 0.4:
+            leaf_points = leaf_seg_pred['points']
+            leaf_single_mask = create_mask_from_points(img.shape, leaf_points)
+            total_leaf_area_mask = cv2.bitwise_or(total_leaf_area_mask, leaf_single_mask)
 
     infected_area_pixels = np.count_nonzero(infected_area_mask)
-    total_area_pixels = np.count_nonzero(total_area_mask)
+    total_leaf_area_pixels = np.count_nonzero(total_leaf_area_mask)
 
-    if total_area_pixels > 0 and predicted_class != 'Hypodontia':
-        infected_area_percentage = (infected_area_pixels / total_area_pixels) * 100 + 5
+    if total_leaf_area_pixels > 0 and predicted_class != 'Calculus':
+        infected_area_percentage = ((infected_area_pixels / total_leaf_area_pixels)) * 100 + 5
     else:
         infected_area_percentage = 0
-
+    # Cap the infected area percentage at 90%
     infected_area_percentage = min(infected_area_percentage, 90)
-
-    return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
+    return predicted_class, confidence, infected_area_mask, total_leaf_area_mask, infected_area_percentage
 
 # Streamlit App
 st.title('Automated Dental and Gum Health Detection WebApp Using Deep Learning')
