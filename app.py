@@ -115,6 +115,7 @@ def predict(img): # Remove the 'model' argument
         infected_area_percentage = min(infected_area_percentage, 100)
     elif predicted_class == 'Hypodontia':
         infected_area_percentage = 0
+    st.write(f"Predicted Class from Roboflow: {predicted_class}")
 
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
