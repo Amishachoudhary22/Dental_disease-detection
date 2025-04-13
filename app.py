@@ -57,7 +57,7 @@ def predict(img): # Remove the 'model' argument
             predicted_class = top_prediction['class']
             confidence = round(top_prediction['confidence'] * 100, 2)
             if predicted_class == "tooth discoloration original dataset":
-            predicted_class = "Tooth Discoloration"
+                predicted_class = "Tooth Discoloration"
         else:
             st.warning("No classification predictions found.")
             return "Unknown", 0, None, None, 0
