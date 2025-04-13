@@ -46,14 +46,16 @@ def predict(img): # Remove the 'model' argument
     img_shape = img_np.shape
 
     try:
-        # Replace with your actual Roboflow Model ID and Version for classification
         classification_result = CLIENT.infer(
             img_np,
-            model_id="dentaldisease-pbral/3"  # Specify model_type as "classification"
+            model_id="dentaldisease-pbral/3"
         )
 
         if classification_result and classification_result['predictions']:
-            top_prediction = classification_result['predictions'][0] # Get the top prediction
+            # Print all predictions for debugging
+            st.write("Classification Predictions:", classification_result['predictions'])
+
+            top_prediction = classification_result['predictions'][0]
             predicted_class = top_prediction['class']
             confidence = round(top_prediction['confidence'] * 100, 2)
             if predicted_class == "tooth discoloration original dataset":
@@ -78,7 +80,6 @@ def predict(img): # Remove the 'model' argument
     infected_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
     total_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
 
-    # --- Infected Area Segmentation (Disease-Specific) ---
     disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
         try:
