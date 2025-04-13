@@ -37,7 +37,7 @@ def predict(model, img):
     confidence = round(100 * (np.max(predictions[0])), 2)
 
     # Call Roboflow API for segmentation
-    segmentation_result = CLIENT.infer(img, model_id="plant-disease-detection-ryzqa/7")  # Replace model_id!
+    segmentation_result = CLIENT.infer(img, model_id="dental_disease_detection/2")  # Replace model_id!
     infected_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
     total_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
 
@@ -50,7 +50,7 @@ def predict(model, img):
                 infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
 
     # Total mouth/dental area segmentation
-    mouth_segmentation_result = CLIENT2.infer(img, model_id="segmentasi-daun/4")  # Replace model_id!
+    mouth_segmentation_result = CLIENT2.infer(img, model_id="amisha-choudhary-d1mrr/dental_disease_detection-instant-2")  # Replace model_id!
     mouth_segmentation_predictions = mouth_segmentation_result['predictions']
     for mouth_seg_pred in mouth_segmentation_predictions:
         if mouth_seg_pred['confidence'] > 0.4:
