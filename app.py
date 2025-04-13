@@ -1,118 +1,96 @@
-import tensorflow as tf
-import numpy as np
-import cv2
-from PIL import Image
-from inference_sdk import InferenceHTTPClient
-import streamlit as st
 import os
+import cv2
+import numpy as np
+import tensorflow as tf
+from PIL import Image
+import streamlit as st
+from inference_sdk import InferenceHTTPClient
 
-# Retrieve API key securely
-api_key = st.secrets["ROBOFLOW_API_KEY"]
-
-# Initialize Roboflow clients
-CLIENT = InferenceHTTPClient(
-    api_url="https://outline.roboflow.com",
-    api_key=api_key
+# --- Setup ---
+st.set_page_config(page_title="Dental Health Detection", layout="wide")
+st.title('🦷 Automated Dental and Gum Health Detection')
+st.write(
+    "Upload an image of your teeth or gums. The app will predict possible issues, "
+    "highlight affected areas, and estimate the infection percentage."
 )
-CLIENT2 = InferenceHTTPClient(
-    api_url="https://outline.roboflow.com",
-    api_key=api_key
-)
 
-# Define class names for prediction
-class_names = ['Calculus', 'Data caries', 'Gingivitis', 'Mouth Ulcer', 'Tooth Discoloration', 'Hypodontia']
+# Securely retrieve Roboflow API key
+API_KEY = st.secrets["ROBOFLOW_API_KEY"]
 
-def create_mask_from_points(image_shape, points):
+# Initialize Roboflow client
+client = InferenceHTTPClient(api_url="https://outline.roboflow.com", api_key=API_KEY)
+
+# Define class names
+CLASS_NAMES = ['Calculus', 'Data caries', 'Gingivitis', 'Mouth Ulcer', 'Tooth Discoloration', 'Hypodontia']
+
+# Load Model
+@st.cache_resource
+def load_model():
+    model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
+    return tf.keras.models.load_model(model_path)
+
+model = load_model()
+
+# --- Helper Functions ---
+def create_mask(image_shape, points):
     mask = np.zeros(image_shape[:2], dtype=np.uint8)
-    points_array = np.array([[p['x'], p['y']] for p in points], dtype=np.int32)
-    cv2.fillPoly(mask, [points_array], 1)
+    polygon = np.array([[p['x'], p['y']] for p in points], dtype=np.int32)
+    cv2.fillPoly(mask, [polygon], 1)
     return mask
 
-def predict(model, img):
-    img_array = tf.keras.preprocessing.image.img_to_array(img)
-    img_array = tf.expand_dims(img_array, 0)
+def infer_segmentation(image, model_id="gp-dental/2", confidence_threshold=0.4):
+    response = client.infer(image, model_id=model_id)
+    masks = np.zeros(image.shape[:2], dtype=np.uint8)
+    for prediction in response.get('predictions', []):
+        if prediction['confidence'] > confidence_threshold:
+            mask = create_mask(image.shape, prediction['points'])
+            masks = cv2.bitwise_or(masks, mask)
+    return masks
 
-    predictions = model.predict(img_array)
-    predicted_class = class_names[np.argmax(predictions[0])]
-    confidence = round(100 * (np.max(predictions[0])), 2)
-
-    # Call Roboflow API for segmentation
-    segmentation_result = CLIENT.infer(img, model_id="gp-dental/2")  # Replace model_id!
-    infected_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
-    total_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
-
-    if predicted_class != 'Healthy':
-        segmentation_predictions = segmentation_result['predictions']
-        for seg_pred in segmentation_predictions:
-            if seg_pred['confidence'] > 0.4:
-                points = seg_pred['points']
-                single_mask = create_mask_from_points(img.shape, points)
-                infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
-
-    # Total mouth/dental area segmentation
-    mouth_segmentation_result = CLIENT2.infer(img, model_id="gp-dental/2")  # Replace model_id!
-    mouth_segmentation_predictions = mouth_segmentation_result['predictions']
-    for mouth_seg_pred in mouth_segmentation_predictions:
-        if mouth_seg_pred['confidence'] > 0.4:
-            mouth_points = mouth_seg_pred['points']
-            mouth_single_mask = create_mask_from_points(img.shape, mouth_points)
-            total_area_mask = cv2.bitwise_or(total_area_mask, mouth_single_mask)
-
-    infected_area_pixels = np.count_nonzero(infected_area_mask)
-    total_area_pixels = np.count_nonzero(total_area_mask)
-
-    if total_area_pixels > 0 and predicted_class != 'Healthy':
-        infected_area_percentage = (infected_area_pixels / total_area_pixels) * 100 + 5
+def predict(image):
+    img_array = tf.keras.preprocessing.image.img_to_array(image)
+    img_array = tf.expand_dims(img_array, axis=0)
+    preds = model.predict(img_array)[0]
+    predicted_idx = np.argmax(preds)
+    predicted_class = CLASS_NAMES[predicted_idx]
+    confidence = round(preds[predicted_idx] * 100, 2)
+    
+    # Infection Segmentation
+    infected_mask = infer_segmentation(image)
+    total_mask = infer_segmentation(image)  # Could replace with another model if needed
+    
+    infected_pixels = np.count_nonzero(infected_mask)
+    total_pixels = np.count_nonzero(total_mask)
+    
+    if total_pixels > 0:
+        infected_area_percentage = min((infected_pixels / total_pixels) * 100 + 5, 90)
     else:
         infected_area_percentage = 0
+    
+    return predicted_class, confidence, infected_mask, total_mask, infected_area_percentage
 
-    infected_area_percentage = min(infected_area_percentage, 90)
+def overlay_masks(image, infected_mask, total_mask):
+    overlay = np.copy(image)
+    overlay[total_mask > 0] = (0, 255, 0)      # Green total area
+    overlay[infected_mask > 0] = (255, 0, 0)   # Red infection (priority)
+    return cv2.addWeighted(image, 0.7, overlay, 0.3, 0)
 
-    return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
-
-# Streamlit App
-st.title('Automated Dental and Gum Health Detection WebApp Using Deep Learning')
-
-st.write(
-    "Upload an image showing your dental or gum area. The app will detect potential dental health issues, "
-    "estimate the infection percentage, and highlight affected areas."
-)
-
+# --- Streamlit App Interface ---
 uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
 
-if uploaded_file is not None:
-    img = Image.open(uploaded_file)
-    img = img.convert("RGB")
-    img_np = np.array(img)
+if uploaded_file:
+    with st.spinner("Processing..."):
+        img = Image.open(uploaded_file).convert("RGB")
+        img_np = np.array(img)
 
-    st.image(img, caption="Uploaded Dental Image", use_container_width=True)
+        st.image(img_np, caption="Uploaded Image", use_container_width=True)
 
-    model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
-    try:
-        model = tf.keras.models.load_model(model_path)
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        st.stop()
+        predicted_class, confidence, infected_mask, total_mask, infected_area_percentage = predict(img_np)
 
-    predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage = predict(model, img_np)
+        st.success(f"**Prediction:** {predicted_class}")
+        st.info(f"**Confidence:** {confidence:.2f}%")
+        st.warning(f"**Infected Area:** {infected_area_percentage:.2f}%")
 
-    st.subheader(f"Prediction: {predicted_class}")
-    st.subheader(f"Confidence: {confidence}%")
-    st.subheader(f"Infected Area: {infected_area_percentage:.2f}%")
-
-    st.subheader("Infection and Dental Area Segmentation")
-
-    # Red mask for infected area
-    color_mask_infected = np.zeros_like(img_np, dtype=np.uint8)
-    color_mask_infected[infected_area_mask > 0] = [255, 0, 0]
-
-    # Green mask for total dental area
-    color_mask_total = np.zeros_like(img_np, dtype=np.uint8)
-    color_mask_total[total_area_mask > 0] = [0, 255, 0]
-
-    # Prevent overlap (Red priority)
-    color_mask_total[infected_area_mask > 0] = [255, 0, 0]
-
-    combined_mask = cv2.addWeighted(img_np, 0.7, color_mask_total, 0.3, 0)
-
-    st.image(combined_mask, caption="Segmentation Overlay", use_container_width=True)
+        # Display Segmentation Overlay
+        overlay_img = overlay_masks(img_np, infected_mask, total_mask)
+        st.image(overlay_img, caption="🖌️ Segmentation Overlay", use_container_width=True)
