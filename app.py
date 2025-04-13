@@ -68,7 +68,7 @@ def predict(model, img):
     # Add error handling for the API call
     try:
         # Pass the numpy array or PIL image as required by the SDK
-        segmentation_result = CLIENT.infer(img_np, model_id="dental_disease_detection/2") # Use consistent image format
+        segmentation_result = CLIENT.infer(img_np, model_id="gp-dental/2") # Use consistent image format
         if predicted_class != 'Healthy' and 'predictions' in segmentation_result: # Check if 'predictions' key exists
             segmentation_predictions = segmentation_result['predictions']
             for seg_pred in segmentation_predictions:
@@ -86,7 +86,7 @@ def predict(model, img):
     # Add error handling for the API call
     try:
         # Pass the numpy array or PIL image as required by the SDK
-        mouth_segmentation_result = CLIENT2.infer(img_np, model_id="gp-dental/2") # Use consistent image format
+        mouth_segmentation_result = CLIENT2.infer(img_np, model_id="data_teeth/3") # Use consistent image format
         if 'predictions' in mouth_segmentation_result: # Check if 'predictions' key exists
             mouth_segmentation_predictions = mouth_segmentation_result['predictions']
             for mouth_seg_pred in mouth_segmentation_predictions:
