@@ -41,16 +41,16 @@ def predict(model, img):
     infected_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
     total_area_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
 
-   segmentation_predictions = segmentation_result.get('predictions', [])
+    segmentation_predictions = segmentation_result.get('predictions', [])
 
-if not segmentation_predictions:
-    st.warning("No infected areas detected!")
-else:
-    for seg_pred in segmentation_predictions:
-        if seg_pred.get('confidence', 0) > 0.4 and 'points' in seg_pred:
-            points = seg_pred['points']
-            single_mask = create_mask_from_points(img.shape, points)
-            infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
+    if not segmentation_predictions:
+        st.warning("No infected areas detected!")
+    else:
+        for seg_pred in segmentation_predictions:
+            if seg_pred.get('confidence', 0) > 0.4 and 'points' in seg_pred:
+                points = seg_pred['points']
+                single_mask = create_mask_from_points(img.shape, points)
+                infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
 
 
     # Total mouth/dental area segmentation
