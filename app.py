@@ -50,7 +50,6 @@ def predict(img): # Remove the 'model' argument
         classification_result = CLIENT.infer(
             img_np,
             model_id="dental_disease_detection/2",
-            model_version=2,
             model_type="classification"  # Specify model_type as "classification"
         )
 
