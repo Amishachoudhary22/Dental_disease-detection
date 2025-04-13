@@ -139,52 +139,41 @@ if uploaded_file is not None:
 
         # @st.cache_resource
         # def load_tf_model(model_path):
-        #     if not os.path.exists(model_path):
-        #         st.error(f"Model file not found at: {model_path}")
-        #         return None
-        #     try:
-        #         loaded_model = tf.keras.models.load_model(model_path, compile=False)
-        #         st.success("Model loaded successfully!")
-        #         return loaded_model
-        #     except Exception as e:
-        #         st.error(f"Error loading model: {e}")
-        #         return None
+        #     # ...
 
         # model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
         # model = load_tf_model(model_path)
 
-        
-            prediction_result = predict(img_np)
-            if prediction_result and all(val is not None for val in prediction_result):
-                predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage = prediction_result
+        prediction_result = predict(img_np)  # Corrected indentation
+        if prediction_result and all(val is not None for val in prediction_result):
+            predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage = prediction_result
 
-                st.subheader(f"Prediction: {predicted_class}")
-                st.subheader(f"Confidence: {confidence}%")
-                st.subheader(f"Infected Area: {infected_area_percentage:.2f}%")
+            st.subheader(f"Prediction: {predicted_class}")
+            st.subheader(f"Confidence: {confidence}%")
+            st.subheader(f"Infected Area: {infected_area_percentage:.2f}%")
 
-                st.subheader("Infection and Dental Area Segmentation")
+            st.subheader("Infection and Dental Area Segmentation")
 
-                infected_mask_bool = infected_area_mask > 0
-                total_mask_bool = total_area_mask > 0
+            infected_mask_bool = infected_area_mask > 0
+            total_mask_bool = total_area_mask > 0
 
-                color_mask_infected = np.zeros_like(img_np, dtype=np.uint8)
-                color_mask_infected[infected_mask_bool] = [255, 0, 0] # Red
+            color_mask_infected = np.zeros_like(img_np, dtype=np.uint8)
+            color_mask_infected[infected_mask_bool] = [255, 0, 0] # Red
 
-                color_mask_combined = np.zeros_like(img_np, dtype=np.uint8)
-                color_mask_combined[total_mask_bool] = [0, 255, 0] # Green
-                color_mask_combined[infected_mask_bool] = [255, 0, 0] # Red (priority)
+            color_mask_combined = np.zeros_like(img_np, dtype=np.uint8)
+            color_mask_combined[total_mask_bool] = [0, 255, 0] # Green
+            color_mask_combined[infected_mask_bool] = [255, 0, 0] # Red (priority)
 
-                alpha = 0.3
-                beta = 1.0 - alpha
-                combined_display = cv2.addWeighted(img_np, beta, color_mask_combined, alpha, 0.0)
+            alpha = 0.3
+            beta = 1.0 - alpha
+            combined_display = cv2.addWeighted(img_np, beta, color_mask_combined, alpha, 0.0)
 
-                st.image(combined_display, caption="Segmentation Overlay", use_container_width=True)
-            else:
-                st.error("Prediction failed. Please check the logs or try a different image.")
+            st.image(combined_display, caption="Segmentation Overlay", use_container_width=True)
         else:
-            st.error("Model could not be loaded. Cannot proceed with prediction.")
+            st.error("Prediction failed. Please check the logs or try a different image.")
+        # else:
+        #     st.error("Model could not be loaded. Cannot proceed with prediction.")
 
     except Exception as e:
         st.error(f"An error occurred processing the image: {e}")
         st.exception(e)
-
