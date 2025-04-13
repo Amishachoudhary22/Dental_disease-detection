@@ -87,7 +87,7 @@ if uploaded_file is not None:
 
     st.image(img, caption="Uploaded Dental Image", use_container_width=True)
 
-    model_path = os.path.join(os.getcwd(), "dental_problems_2.h5")
+    model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
     try:
         model = tf.keras.models.load_model(model_path)
     except Exception as e:
