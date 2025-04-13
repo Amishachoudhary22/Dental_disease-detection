@@ -49,8 +49,7 @@ def predict(img): # Remove the 'model' argument
         # Replace with your actual Roboflow Model ID and Version for classification
         classification_result = CLIENT.infer(
             img_np,
-            model_id="dental_disease_detection/2",
-            model_type="classification"  # Specify model_type as "classification"
+            model_id="odontoapp/1"  # Specify model_type as "classification"
         )
 
         if classification_result and classification_result['predictions']:
