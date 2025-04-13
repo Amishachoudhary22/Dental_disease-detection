@@ -137,21 +137,21 @@ if uploaded_file is not None:
 
         st.image(img, caption="Uploaded Dental Image", use_container_width=True)
 
-        @st.cache_resource
-        def load_tf_model(model_path):
-            if not os.path.exists(model_path):
-                st.error(f"Model file not found at: {model_path}")
-                return None
-            try:
-                loaded_model = tf.keras.models.load_model(model_path, compile=False)
-                st.success("Model loaded successfully!")
-                return loaded_model
-            except Exception as e:
-                st.error(f"Error loading model: {e}")
-                return None
+        # @st.cache_resource
+        # def load_tf_model(model_path):
+        #     if not os.path.exists(model_path):
+        #         st.error(f"Model file not found at: {model_path}")
+        #         return None
+        #     try:
+        #         loaded_model = tf.keras.models.load_model(model_path, compile=False)
+        #         st.success("Model loaded successfully!")
+        #         return loaded_model
+        #     except Exception as e:
+        #         st.error(f"Error loading model: {e}")
+        #         return None
 
-        model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
-        model = load_tf_model(model_path)
+        # model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
+        # model = load_tf_model(model_path)
 
         if model:
             prediction_result = predict(model, img_np)
