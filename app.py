@@ -153,9 +153,8 @@ if uploaded_file is not None:
         # model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
         # model = load_tf_model(model_path)
 
-        if model:
-            prediction_result = predict(model, img_np)
-
+        
+            prediction_result = predict(img_np)
             if prediction_result and all(val is not None for val in prediction_result):
                 predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage = prediction_result
 
