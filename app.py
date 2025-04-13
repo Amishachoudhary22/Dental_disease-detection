@@ -48,7 +48,7 @@ def predict(img): # Remove the 'model' argument
     try:
         classification_result = CLIENT.infer(
             img_np,
-            model_id="dentaldisease-pbral/3"
+            model_id="sinistroodonto/1"
         )
 
         if classification_result and classification_result['predictions']:
