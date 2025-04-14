@@ -28,7 +28,7 @@ ROBOFLOW_CLASS_MAPPING = {
     "tooth discoloration": "Tooth Discoloration",
     "calculus": "Calculus",
     "gingivitis": "Gingivitis",
-    "ulcer" : "Mouth Ulcer",
+    "ulcer": "Mouth Ulcer",
     "hypodontia": "Hypodontia"
 }
 
@@ -61,9 +61,6 @@ def predict(img): # Remove the 'model' argument
         )
 
         if classification_result and classification_result['predictions']:
-            # Print all predictions for debugging
-            st.write("Classification Predictions:", classification_result['predictions'])
-
             top_prediction = classification_result['predictions'][0]
             predicted_class_raw = top_prediction['class']
             confidence = round(top_prediction['confidence'] * 100, 2)
