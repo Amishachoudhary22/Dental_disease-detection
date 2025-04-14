@@ -28,7 +28,7 @@ ROBOFLOW_CLASS_MAPPING = {
     "tooth discoloration": "Tooth Discoloration",
     "calculus": "Calculus",
     "gingivitis": "Gingivitis",
-    "Unknown" : "Mouth Ulcer",
+    "ulcer" : "Mouth Ulcer",
     "hypodontia": "Hypodontia"
 }
 
