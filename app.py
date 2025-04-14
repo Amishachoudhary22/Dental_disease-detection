@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -22,6 +21,15 @@ CLIENT2 = InferenceHTTPClient(
 
 # Define class names for prediction
 class_names = ['Calculus', 'Data caries', 'Gingivitis', 'Mouth Ulcer', 'Tooth Discoloration', 'Hypodontia']
+ROBOFLOW_CLASS_MAPPING = {
+    "caries": "Data caries",
+    "preview": "Mouth Ulcer",
+    "tooth discoloration original dataset": "Tooth Discoloration",
+    "tooth discoloration": "Tooth Discoloration",
+    "calculus": "Calculus",
+    "gingivitis": "Gingivitis",
+    "hypodontia": "Hypodontia"
+}
 
 def create_mask_from_points(image_shape, points):
     mask = np.zeros(image_shape[:2], dtype=np.uint8)
@@ -56,10 +64,11 @@ def predict(img): # Remove the 'model' argument
             st.write("Classification Predictions:", classification_result['predictions'])
 
             top_prediction = classification_result['predictions'][0]
-            predicted_class = top_prediction['class']
+            predicted_class_raw = top_prediction['class']
             confidence = round(top_prediction['confidence'] * 100, 2)
-            if predicted_class == "tooth discoloration original dataset":
-                predicted_class = "Tooth Discoloration"
+
+            predicted_class = ROBOFLOW_CLASS_MAPPING.get(predicted_class_raw.lower(), "Unknown")
+
         else:
             st.warning("No classification predictions found.")
             return "Unknown", 0, None, None, 0
@@ -118,7 +127,7 @@ def predict(img): # Remove the 'model' argument
         infected_area_percentage = min(infected_area_percentage, 100)
     elif predicted_class == 'Hypodontia':
         infected_area_percentage = 0
-    
+
     st.write(f"Predicted Class from Roboflow: {predicted_class}")
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
@@ -140,14 +149,7 @@ if uploaded_file is not None:
 
         st.image(img, caption="Uploaded Dental Image", use_container_width=True)
 
-        # @st.cache_resource
-        # def load_tf_model(model_path):
-        #     # ...
-
-        # model_path = os.path.join(os.getcwd(), "dental_problems-2.h5")
-        # model = load_tf_model(model_path)
-
-        prediction_result = predict(img_np)  # Corrected indentation
+        prediction_result = predict(img_np)
         if prediction_result and all(val is not None for val in prediction_result):
             predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage = prediction_result
 
@@ -174,8 +176,6 @@ if uploaded_file is not None:
             st.image(combined_display, caption="Segmentation Overlay", use_container_width=True)
         else:
             st.error("Prediction failed. Please check the logs or try a different image.")
-        # else:
-        #     st.error("Model could not be loaded. Cannot proceed with prediction.")
 
     except Exception as e:
         st.error(f"An error occurred processing the image: {e}")
