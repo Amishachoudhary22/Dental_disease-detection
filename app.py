@@ -23,11 +23,12 @@ CLIENT2 = InferenceHTTPClient(
 class_names = ['Calculus', 'Data caries', 'Gingivitis', 'Mouth Ulcer', 'Tooth Discoloration', 'Hypodontia']
 ROBOFLOW_CLASS_MAPPING = {
     "caries": "Data caries",
-    "preview": "Mouth Ulcer",
+    "preview": "Calculus",
     "tooth discoloration original dataset": "Tooth Discoloration",
     "tooth discoloration": "Tooth Discoloration",
     "calculus": "Calculus",
     "gingivitis": "Gingivitis",
+    "unknown" : "Mouth Ulcer",
     "hypodontia": "Hypodontia"
 }
 
