@@ -76,11 +76,11 @@ def predict(img): # Remove the 'model' argument
         return "Error", 0, None, None, 0
 
     disease_segmentation_model_ids = {
-        'Calculus': 'segmentasi-daun/4',
-        'Data caries': 'segmentasi-daun/4',
-        'Gingivitis': 'segmentasi-daun/4',
-        'Mouth Ulcer': 'segmentasi-daun/4',
-        'Tooth Discoloration': 'segmentasi-daun/4',
+        'Calculus': 'data_teeth/3',
+        'Data caries': 'data_teeth/3',
+        'Gingivitis': 'data_teeth/3',
+        'Mouth Ulcer': 'data_teeth/3',
+        'Tooth Discoloration': 'data_teeth/3',
         'Hypodontia': None
     }
 
@@ -105,7 +105,7 @@ def predict(img): # Remove the 'model' argument
 
     # --- Total Mouth/Dental Area Segmentation ---
     try:
-        mouth_segmentation_result = CLIENT2.infer(img_np, model_id="segmentasi-daun/4")
+        mouth_segmentation_result = CLIENT2.infer(img_np, model_id="data_teeth/3")
         if 'predictions' in mouth_segmentation_result:
             for mouth_seg_pred in mouth_segmentation_result.get('predictions', []):
                 if mouth_seg_pred.get('confidence', 0) > 0.4 and 'points' in mouth_seg_pred:
