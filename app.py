@@ -105,7 +105,7 @@ def predict(img): # Remove the 'model' argument
 
     # --- Total Mouth/Dental Area Segmentation ---
     try:
-        mouth_segmentation_result = CLIENT2.infer(img_np, model_id="data_teeth/3")
+        mouth_segmentation_result = CLIENT2.infer(img_np, model_id="segmentasi-daun/4")
         if 'predictions' in mouth_segmentation_result:
             for mouth_seg_pred in mouth_segmentation_result.get('predictions', []):
                 if mouth_seg_pred.get('confidence', 0) > 0.4 and 'points' in mouth_seg_pred:
