@@ -76,11 +76,11 @@ def predict(img): # Remove the 'model' argument
         return "Error", 0, None, None, 0
 
     disease_segmentation_model_ids = {
-        'Calculus': 'data_teeth/3',
-        'Data caries': 'data_teeth/3',
-        'Gingivitis': 'gingivitis-n2cjt/3',
-        'Mouth Ulcer': 'gingivitis-n2cjt/3',
-        'Tooth Discoloration': 'gingivitis-n2cjt/3',
+        'Calculus': 'segmentasi-daun/4',
+        'Data caries': 'segmentasi-daun/4',
+        'Gingivitis': 'segmentasi-daun/4',
+        'Mouth Ulcer': 'segmentasi-daun/4',
+        'Tooth Discoloration': 'segmentasi-daun/4',
         'Hypodontia': None
     }
 
