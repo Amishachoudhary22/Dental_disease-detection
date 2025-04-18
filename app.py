@@ -75,8 +75,8 @@ def predict(img):
 
     disease_segmentation_model_ids = {
         'Calculus': 'data_teeth/3',  # FIXME: Needs specific Calculus segmentation model ID
-        'Data caries': 'dental-dataset/1',
-        'Gingivitis': 'dental_project-ee1ur/2',
+        'Data caries': 'caries-sfptw/1',
+        'Gingivitis': 'gingivitis_is/1',
         'Mouth Ulcer': 'mouth-ulser/1',
         'Tooth Discoloration': 'data_teeth/3', # FIXME: Needs specific Discoloration segmentation model ID
         'Hypodontia': None
