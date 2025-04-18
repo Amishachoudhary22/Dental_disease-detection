@@ -131,7 +131,7 @@ def predict(img):
         st.warning(f"No specific segmentation model ID found for {predicted_class}. Infected area mask will be empty.")
 
     # --- Total Mouth/Dental Area Segmentation ---
-    total_area_model_id = "data_teeth/3"
+    total_area_model_id = "dental-dataset/1"
     st.write(f"Attempting total area segmentation using model ID: {total_area_model_id}") # Debug
     try:
         mouth_segmentation_result = CLIENT2.infer(img_np, model_id=total_area_model_id)
@@ -162,7 +162,7 @@ def predict(img):
         st.write("DEBUG: Infected Area Mask is empty.")
 
     if np.any(total_area_mask): # Only show if not empty
-        st.image(total_area_mask * 255, caption="DEBUG: Total Area Mask (data_teeth/3)", clamp=True, channels="GRAY")
+        st.image(total_area_mask * 255, caption="DEBUG: Total Area Mask dental-dataset/1", clamp=True, channels="GRAY")
     else:
         st.write("DEBUG: Total Area Mask is empty.")
     # --- **** END DEBUG **** ---
