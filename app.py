@@ -93,7 +93,7 @@ def predict(img):
         st.write(f"DEBUG: Attempting disease segmentation for '{predicted_class}' using model ID: {disease_model_id}") # Debug
         try:
             segmentation_result = CLIENT.infer(img_np, model_id=disease_model_id)
-            st.write(f"DEBUG: Raw Segmentation Result: {segmentation_result}") # Debug
+            st.write(f"DEBUG: Raw Segmentation Result BEFORE Confidence Check: {segmentation_result}") # Debug (NEW LINE)
             if 'predictions' in segmentation_result:
                 st.write(f"DEBUG: Found {len(segmentation_result['predictions'])} segmentation predictions.") # Debug
                 for i, seg_pred in enumerate(segmentation_result['predictions']):
@@ -143,7 +143,7 @@ def predict(img):
 
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
-# --- Streamlit App Code (No changes needed here) ---
+# --- Streamlit App Code (No changes needed) ---
 st.title('Automated Dental and Gum Health Detection WebApp Using Deep Learning')
 
 st.write(
