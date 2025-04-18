@@ -88,13 +88,18 @@ def predict(img):
     # Disease Area Segmentation
     disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
+        st.write(f"DEBUG: Attempting disease segmentation for '{predicted_class}' using model ID: {disease_model_id}") # Debug
         try:
             segmentation_result = CLIENT.infer(img_np, model_id=disease_model_id)
+            st.write(f"DEBUG: Raw Segmentation Result: {segmentation_result}") # Debug
             if 'predictions' in segmentation_result:
-                for seg_pred in segmentation_result['predictions']:
+                st.write(f"DEBUG: Found {len(segmentation_result['predictions'])} segmentation predictions.") # Debug
+                for i, seg_pred in enumerate(segmentation_result['predictions']):
                     pred_conf = seg_pred.get('confidence', 0)
-                    if pred_conf > 0.4 and 'points' in seg_pred:
+                    st.write(f"DEBUG: Prediction {i+1} - Confidence: {pred_conf}, Keys: {seg_pred.keys()}") # Debug
+                    if pred_conf > 0.1 and 'points' in seg_pred: # Lowered confidence threshold for debugging
                         points = seg_pred['points']
+                        st.write(f"DEBUG: Prediction {i+1} - Found {len(points)} points.") # Debug
                         if points:
                             single_mask = create_mask_from_points(img_shape, points)
                             infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
@@ -137,7 +142,7 @@ def predict(img):
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
 
-# --- Streamlit App Code ---
+# --- Streamlit App Code (No changes needed here for debugging) ---
 st.title('Automated Dental and Gum Health Detection WebApp Using Deep Learning')
 
 st.write(
