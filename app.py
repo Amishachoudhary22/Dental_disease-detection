@@ -174,7 +174,8 @@ def predict(img):
     # --- Calculate Percentage ---
     infected_area_pixels = np.count_nonzero(infected_area_mask)
     total_area_pixels = np.count_nonzero(total_area_mask)
-
+    infected_area_pixels_corrected = np.count_nonzero(logically_correct_infected_mask)
+    total_area_pixels = np.count_nonzero(total_area_mask)
     # --- **** DEBUG: Print Pixel Counts **** ---
     st.write(f"DEBUG: Infected Pixels Count = {infected_area_pixels}")
     st.write(f"DEBUG: Total Area Pixels Count = {total_area_pixels}")
