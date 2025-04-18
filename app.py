@@ -166,7 +166,7 @@ def predict(img):
     else:
         st.write("DEBUG: Total Area Mask is empty.")
     # --- **** END DEBUG **** ---
-
+    logically_correct_infected_mask = cv2.bitwise_and(infected_area_mask, total_area_mask)
     if np.any(logically_correct_infected_mask):
         st.image(logically_correct_infected_mask * 255, caption="DEBUG: Corrected Infected Area Mask (Intersection)", clamp=True, channels="GRAY")
     else:
