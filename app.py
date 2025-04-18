@@ -156,18 +156,21 @@ def predict(img):
 
 
     # --- **** DEBUG: Visualize Individual Masks **** ---
-    if np.any(infected_area_mask): # Only show if not empty
-        st.image(infected_area_mask * 255, caption=f"DEBUG: Infected Area Mask ({predicted_class})", clamp=True, channels="GRAY")
+    if np.any(infected_area_mask):
+        st.image(infected_area_mask * 255, caption=f"DEBUG: Original Infected Area Mask ({predicted_class})", clamp=True, channels="GRAY")
     else:
         st.write("DEBUG: Infected Area Mask is empty.")
 
-    if np.any(total_area_mask): # Only show if not empty
-        st.image(total_area_mask * 255, caption="DEBUG: Total Area Mask dental-dataset/1", clamp=True, channels="GRAY")
+    if np.any(total_area_mask):
+        st.image(total_area_mask * 255, caption=f"DEBUG: Original Total Area Mask ({total_area_model_id})", clamp=True, channels="GRAY")
     else:
         st.write("DEBUG: Total Area Mask is empty.")
     # --- **** END DEBUG **** ---
 
-
+    if np.any(logically_correct_infected_mask):
+        st.image(logically_correct_infected_mask * 255, caption="DEBUG: Corrected Infected Area Mask (Intersection)", clamp=True, channels="GRAY")
+    else:
+        st.write("DEBUG: Corrected Infected Area Mask is empty.")
     # --- Calculate Percentage ---
     infected_area_pixels = np.count_nonzero(infected_area_mask)
     total_area_pixels = np.count_nonzero(total_area_mask)
@@ -176,11 +179,13 @@ def predict(img):
     st.write(f"DEBUG: Infected Pixels Count = {infected_area_pixels}")
     st.write(f"DEBUG: Total Area Pixels Count = {total_area_pixels}")
     # --- **** END DEBUG **** ---
-
+    st.write(f"DEBUG (Original Infected Pixels): {np.count_nonzero(infected_area_mask)}")
+    st.write(f"DEBUG (Corrected Infected Pixels): {infected_area_pixels_corrected}") # This count will now be <= total_area_pixels
+    st.write(f"DEBUG (Total Area Pixels): {total_area_pixels}")
     infected_area_percentage = 0
     if total_area_pixels > 0 and predicted_class != 'Hypodontia':
         # Ensure calculation is done using float division
-        infected_area_percentage = (float(infected_area_pixels) / float(total_area_pixels)) * 100.0
+        infected_area_percentage = (float(infected_area_pixels_corrected) / float(total_area_pixels)) * 100.0
         # Clamp value between 0 and 100
         infected_area_percentage = max(0.0, min(infected_area_percentage, 100.0))
     elif predicted_class == 'Hypodontia':
@@ -189,7 +194,7 @@ def predict(img):
          st.warning("Total dental area segmentation resulted in zero pixels. Cannot calculate percentage.")
          infected_area_percentage = 0 # Or indicate error/unknown state differently
 
-    st.write(f"DEBUG: Calculated Percentage = {infected_area_percentage:.4f}%") # Debug final percentage
+    st.write(f"DEBUG: Final Calculated Percentage = {infected_area_percentage:.4f}%")
 
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
