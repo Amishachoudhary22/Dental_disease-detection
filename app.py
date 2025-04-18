@@ -75,7 +75,7 @@ def predict(img):
 
     disease_segmentation_model_ids = {
         'Calculus': 'data_teeth/3',  # FIXME: Needs specific Calculus segmentation model ID
-        'Data caries': 'dental-ai-yerxe/3',
+        'Data caries': 'dental-dataset/1',
         'Gingivitis': 'dental_project-ee1ur/2',
         'Mouth Ulcer': 'mouth-ulser/1',
         'Tooth Discoloration': 'data_teeth/3', # FIXME: Needs specific Discoloration segmentation model ID
@@ -105,7 +105,7 @@ def predict(img):
         st.warning(f"No specific segmentation model ID found for {predicted_class}. Infected area mask will be empty.")
 
     # Total Mouth/Dental Area Segmentation
-    total_area_model_id = "dental-dataset/1"
+    total_area_model_id = "dental-ai-yerxe/3"
     try:
         mouth_segmentation_result = CLIENT2.infer(img_np, model_id=total_area_model_id)
         if 'predictions' in mouth_segmentation_result:
