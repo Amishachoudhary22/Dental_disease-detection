@@ -103,7 +103,7 @@ def predict(img):
     if disease_model_id:
         st.write(f"Attempting disease segmentation for '{predicted_class}' using model ID: {disease_model_id}") # Debug
         # Check if using the problematic ID
-        if disease_model_id == 'data_teeth/3' and predicted_class in ['Calculus', 'Tooth Discoloration']:
+        if disease_model_id == 'dental-dataset/1' and predicted_class in ['Calculus', 'Tooth Discoloration']:
              st.warning(f"Warning: Using the general 'data_teeth/3' model for '{predicted_class}' segmentation. This will likely result in a 100% infected area if total area is also segmented.")
 
         try:
