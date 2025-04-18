@@ -9,13 +9,13 @@ import os
 # Retrieve API key securely
 api_key = st.secrets["ROBOFLOW_API_KEY"]
 
-# Initialize Roboflow clients
+# Initialize Roboflow clients with the CORRECT API URL
 CLIENT = InferenceHTTPClient(
-    api_url="https://outline.roboflow.com",
+    api_url="https://serverless.roboflow.com",
     api_key=api_key
 )
 CLIENT2 = InferenceHTTPClient(
-    api_url="https://outline.roboflow.com",
+    api_url="https://serverless.roboflow.com",
     api_key=api_key
 )
 
@@ -44,8 +44,6 @@ def create_mask_from_points(image_shape, points):
     except (TypeError, KeyError, ValueError, OverflowError) as e:
         st.warning(f"Could not create mask from points. Error: {e}")
     return mask
-
-# ... (Your imports and create_mask_from_points function remain the same)
 
 def predict(img):
     if isinstance(img, Image.Image):
@@ -145,8 +143,7 @@ def predict(img):
 
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
-# ... (Your Streamlit app code remains the same)
-# --- Streamlit App Code (No changes needed here for debugging) ---
+# --- Streamlit App Code (No changes needed here) ---
 st.title('Automated Dental and Gum Health Detection WebApp Using Deep Learning')
 
 st.write(
