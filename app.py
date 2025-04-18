@@ -45,6 +45,8 @@ def create_mask_from_points(image_shape, points):
         st.warning(f"Could not create mask from points. Error: {e}")
     return mask
 
+# ... (Your imports and create_mask_from_points function remain the same)
+
 def predict(img):
     if isinstance(img, Image.Image):
         img_np = np.array(img.convert("RGB"))
@@ -61,12 +63,14 @@ def predict(img):
     confidence = 0
     try:
         classification_result = CLIENT.infer(img_np, model_id="sinistroodonto/1")
+        st.write(f"DEBUG: Raw Classification Result: {classification_result}") # Debug
         if classification_result and classification_result.get('predictions'):
             sorted_predictions = sorted(classification_result['predictions'], key=lambda p: p['confidence'], reverse=True)
             top_prediction = sorted_predictions[0]
             predicted_class_raw = top_prediction['class']
             confidence = round(top_prediction['confidence'] * 100, 2)
             predicted_class = ROBOFLOW_CLASS_MAPPING.get(predicted_class_raw.lower(), "Unknown")
+            st.write(f"DEBUG: Predicted Class: {predicted_class}, Confidence: {confidence}%") # Debug
         else:
             return "Unknown", 0, None, None, 0
     except Exception as e:
@@ -141,7 +145,7 @@ def predict(img):
 
     return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
-
+# ... (Your Streamlit app code remains the same)
 # --- Streamlit App Code (No changes needed here for debugging) ---
 st.title('Automated Dental and Gum Health Detection WebApp Using Deep Learning')
 
