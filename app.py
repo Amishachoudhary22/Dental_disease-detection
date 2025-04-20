@@ -76,11 +76,11 @@ def predict(img):
         return "Error", 0, None, None, 0
 
     disease_segmentation_model_ids = {
-        'Calculus': 'data_teeth/3',  # FIXME: Needs specific Calculus segmentation model ID
+        'Calculus': 'data_teeth/3',  
         'Data caries': 'caries-sfptw/1',
         'Gingivitis': 'gingivitis_is/1',
-        'Mouth Ulcer': 'dental_project-xcawb/1',
-        'Tooth Discoloration': 'data_teeth/3', # FIXME: Needs specific Discoloration segmentation model ID
+        'Mouth Ulcer': 'mouth-ulser/1',
+        'Tooth Discoloration': 'data_teeth/3', 
         'Hypodontia': None
     }
 
@@ -90,18 +90,18 @@ def predict(img):
     # Disease Area Segmentation
     disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
-        st.write(f"DEBUG: Attempting disease segmentation for '{predicted_class}' using model ID: {disease_model_id}") # Debug
+        st.write(f"DEBUG: Attempting disease segmentation for '{predicted_class}' using model ID: {disease_model_id}")
         try:
             segmentation_result = CLIENT.infer(img_np, model_id=disease_model_id)
-            st.write(f"DEBUG: Raw Segmentation Result BEFORE Confidence Check: {segmentation_result}") # Debug (NEW LINE)
+            st.write(f"DEBUG: Raw Segmentation Result BEFORE Confidence Check: {segmentation_result}") 
             if 'predictions' in segmentation_result:
-                st.write(f"DEBUG: Found {len(segmentation_result['predictions'])} segmentation predictions.") # Debug
+                st.write(f"DEBUG: Found {len(segmentation_result['predictions'])} segmentation predictions.") 
                 for i, seg_pred in enumerate(segmentation_result['predictions']):
                     pred_conf = seg_pred.get('confidence', 0)
-                    st.write(f"DEBUG: Prediction {i+1} - Confidence: {pred_conf}, Keys: {seg_pred.keys()}") # Debug
-                    if pred_conf > 0.1 and 'points' in seg_pred: # Lowered confidence threshold for debugging
+                    st.write(f"DEBUG: Prediction {i+1} - Confidence: {pred_conf}, Keys: {seg_pred.keys()}") 
+                    if pred_conf > 0.1 and 'points' in seg_pred: 
                         points = seg_pred['points']
-                        st.write(f"DEBUG: Prediction {i+1} - Found {len(points)} points.") # Debug
+                        st.write(f"DEBUG: Prediction {i+1} - Found {len(points)} points.") 
                         if points:
                             single_mask = create_mask_from_points(img_shape, points)
                             infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
