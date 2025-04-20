@@ -61,14 +61,12 @@ def predict(img):
     confidence = 0
     try:
         classification_result = CLIENT.infer(img_np, model_id="sinistroodonto/1")
-        st.write(f"DEBUG: Raw Classification Result: {classification_result}") # Debug
         if classification_result and classification_result.get('predictions'):
             sorted_predictions = sorted(classification_result['predictions'], key=lambda p: p['confidence'], reverse=True)
             top_prediction = sorted_predictions[0]
             predicted_class_raw = top_prediction['class']
             confidence = round(top_prediction['confidence'] * 100, 2)
             predicted_class = ROBOFLOW_CLASS_MAPPING.get(predicted_class_raw.lower(), "Unknown")
-            st.write(f"DEBUG: Predicted Class: {predicted_class}, Confidence: {confidence}%") # Debug
         else:
             return "Unknown", 0, None, None, 0
     except Exception as e:
@@ -76,11 +74,11 @@ def predict(img):
         return "Error", 0, None, None, 0
 
     disease_segmentation_model_ids = {
-        'Calculus': 'data_teeth/3',  
+        'Calculus': 'data_teeth/3',
         'Data caries': 'caries-sfptw/1',
-        'Gingivitis': 'gingivitis_is/1',
+        'Gingivitis': 'data_teeth/3',
         'Mouth Ulcer': 'mouth-ulser/1',
-        'Tooth Discoloration': 'data_teeth/3', 
+        'Tooth Discoloration': 'data_teeth/3',
         'Hypodontia': None
     }
 
@@ -90,18 +88,13 @@ def predict(img):
     # Disease Area Segmentation
     disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
-        st.write(f"DEBUG: Attempting disease segmentation for '{predicted_class}' using model ID: {disease_model_id}")
         try:
             segmentation_result = CLIENT.infer(img_np, model_id=disease_model_id)
-            st.write(f"DEBUG: Raw Segmentation Result BEFORE Confidence Check: {segmentation_result}") 
             if 'predictions' in segmentation_result:
-                st.write(f"DEBUG: Found {len(segmentation_result['predictions'])} segmentation predictions.") 
-                for i, seg_pred in enumerate(segmentation_result['predictions']):
+                for seg_pred in segmentation_result['predictions']:
                     pred_conf = seg_pred.get('confidence', 0)
-                    st.write(f"DEBUG: Prediction {i+1} - Confidence: {pred_conf}, Keys: {seg_pred.keys()}") 
-                    if pred_conf > 0.1 and 'points' in seg_pred: 
+                    if pred_conf > 0.1 and 'points' in seg_pred:
                         points = seg_pred['points']
-                        st.write(f"DEBUG: Prediction {i+1} - Found {len(points)} points.") 
                         if points:
                             single_mask = create_mask_from_points(img_shape, points)
                             infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
