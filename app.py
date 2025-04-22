@@ -73,6 +73,10 @@ def predict(img):
         st.error(f"Error during classification API call: {e}")
         return "Error", 0, None, None, 0
 
+    # Create temporary image file for segmentation models
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+    cv2.imwrite(temp_file.name, cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR))
+
     disease_segmentation_model_ids = {
         'Calculus': 'data_teeth/3',
         'Data caries': 'caries-sfptw/1',
@@ -81,13 +85,14 @@ def predict(img):
         'Tooth Discoloration': 'data_teeth/3',
         'Hypodontia': None
     }
+
     infected_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
     total_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
 
     disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
         try:
-            segmentation_result = CLIENT.infer(img_np, model_id=disease_model_id)
+            segmentation_result = CLIENT.infer(temp_file.name, model_id=disease_model_id)
             if 'predictions' in segmentation_result:
                 for seg_pred in segmentation_result['predictions']:
                     pred_conf = seg_pred.get('confidence', 0)
@@ -102,10 +107,10 @@ def predict(img):
     elif predicted_class != 'Hypodontia':
         st.warning(f"No specific segmentation model ID found for {predicted_class}. Infected area mask will be empty.")
 
-    # Total Mouth/Dental Area Segmentation
+    # Total mouth/dental area segmentation
     total_area_model_id = "dental-ai-yerxe/3"
     try:
-        mouth_segmentation_result = CLIENT2.infer(img_np, model_id=total_area_model_id)
+        mouth_segmentation_result = CLIENT2.infer(temp_file.name, model_id=total_area_model_id)
         if 'predictions' in mouth_segmentation_result:
             for mouth_seg_pred in mouth_segmentation_result.get('predictions', []):
                 pred_conf = mouth_seg_pred.get('confidence', 0)
