@@ -77,7 +77,7 @@ def predict(img):
         'Calculus': 'data_teeth/3',
         'Data caries': 'caries-sfptw/1',
         'Gingivitis': 'data_teeth/3',
-        'Mouth Ulcer': 'mouth-ulser/1',
+        'Mouth Ulcer': 'dental_project-xcawb/1',
         'Tooth Discoloration': 'data_teeth/3',
         'Hypodontia': None
     }
@@ -85,7 +85,6 @@ def predict(img):
     infected_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
     total_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
 
-    # Disease Area Segmentation
     disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
         try:
