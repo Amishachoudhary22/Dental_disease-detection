@@ -5,7 +5,7 @@ from PIL import Image
 from inference_sdk import InferenceHTTPClient
 import streamlit as st
 import os
-
+import tempfile
 # Retrieve API key securely
 api_key = st.secrets["ROBOFLOW_API_KEY"]
 
