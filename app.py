@@ -123,11 +123,16 @@ def predict(img):
         st.error(f"Error during total area segmentation API call: {e}")
         st.exception(e)
 
-    logically_correct_infected_mask = cv2.bitwise_and(infected_area_mask, total_area_mask)
-    infected_area_pixels_corrected = np.count_nonzero(logically_correct_infected_mask)
-    total_area_pixels = np.count_nonzero(total_area_mask)
+    if predicted_class == "Mouth Ulcer":
+        infected_area_pixels_corrected = np.count_nonzero(infected_area_mask)
+        total_area_pixels = img_np.shape[0] * img_np.shape[1]  # Or use a fixed area threshold if needed
+    else:
+        logically_correct_infected_mask = cv2.bitwise_and(infected_area_mask, total_area_mask)
+        infected_area_pixels_corrected = np.count_nonzero(logically_correct_infected_mask)
+        total_area_pixels = np.count_nonzero(total_area_mask)
 
-    infected_area_percentage = 0
+    infected_area_percentage = (infected_area_pixels_corrected / total_area_pixels) * 100 if total_area_pixels > 0 else 0
+
     if total_area_pixels > 0 and predicted_class != 'Hypodontia':
         infected_area_percentage = (float(infected_area_pixels_corrected) / float(total_area_pixels)) * 100.0
         infected_area_percentage = max(0.0, min(infected_area_percentage, 100.0))
