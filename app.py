@@ -80,7 +80,7 @@ def predict(img):
     disease_segmentation_model_ids = {
         'Calculus': 'data_teeth/3',
         'Data caries': 'caries-sfptw/1',
-        'Gingivitis': 'data_teeth/3',
+        'Gingivitis': 'gingivitis_is/1',
         'Mouth Ulcer': 'dental_project-xcawb/1',
         'Tooth Discoloration': 'data_teeth/3',
         'Hypodontia': None
