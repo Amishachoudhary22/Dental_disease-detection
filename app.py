@@ -81,7 +81,7 @@ def predict(img):
         'Tooth Discoloration': 'data_teeth/3',
         'Hypodontia': None
     }
-
+    result = CLIENT.infer(your_image.jpg, model_id="dental_project-xcawb/1")
     infected_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
     total_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
 
