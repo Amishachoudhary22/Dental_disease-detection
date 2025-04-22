@@ -1,24 +1,20 @@
-import streamlit as st
+import tensorflow as tf
 import numpy as np
 import cv2
 from PIL import Image
-import io
 from inference_sdk import InferenceHTTPClient
+import streamlit as st
 
-# Secure API Key
+# Securely retrieve API key from Streamlit secrets
 api_key = st.secrets["ROBOFLOW_API_KEY"]
 
-# Initialize Roboflow Clients
+# Initialize Roboflow client
 CLIENT = InferenceHTTPClient(
     api_url="https://serverless.roboflow.com",
     api_key=api_key
 )
-CLIENT2 = InferenceHTTPClient(
-    api_url="https://serverless.roboflow.com",
-    api_key=api_key
-)
 
-# Class Names
+# Class name mappings
 class_names = ['Calculus', 'Data caries', 'Gingivitis', 'Mouth Ulcer', 'Tooth Discoloration', 'Hypodontia']
 ROBOFLOW_CLASS_MAPPING = {
     "caries": "Data caries",
@@ -31,53 +27,57 @@ ROBOFLOW_CLASS_MAPPING = {
     "hypodontia": "Hypodontia"
 }
 
+# Utility: Convert list of polygon points to mask
 def create_mask_from_points(image_shape, points):
     mask = np.zeros(image_shape[:2], dtype=np.uint8)
-    if points:
-        try:
-            pts = np.array([[int(p['x']), int(p['y'])] for p in points], dtype=np.int32)
-            if pts.shape[0] >= 3:
-                cv2.fillPoly(mask, [pts], 1)
-        except Exception as e:
-            st.warning(f"Mask creation error: {e}")
+    if not points:
+        return mask
+    try:
+        points_array = np.array([[int(p['x']), int(p['y'])] for p in points], dtype=np.int32)
+        if points_array.shape[0] >= 3:
+            cv2.fillPoly(mask, [points_array], 1)
+    except (TypeError, KeyError, ValueError, OverflowError) as e:
+        st.warning(f"Could not create mask from points. Error: {e}")
     return mask
 
-def encode_image_to_jpg_bytes(img_np):
-    success, buffer = cv2.imencode(".jpg", img_np)
-    if not success:
-        raise ValueError("Image encoding failed.")
-    return io.BytesIO(buffer.tobytes())
-
+# Main prediction pipeline
 def predict(img):
     if isinstance(img, Image.Image):
-        img = img.convert("RGB")
-        img_np = np.array(img)
+        img_np = np.array(img.convert("RGB"))
     elif isinstance(img, np.ndarray):
         img_np = img
     else:
-        st.error("Unsupported image format.")
+        st.error("Invalid image type passed to predict function.")
         return None, None, None, None, None
 
     img_shape = img_np.shape
-    img_bytes = encode_image_to_jpg_bytes(img_np)
+
+    # Convert to JPG bytes for Roboflow
+    success, encoded_image = cv2.imencode(".jpg", img_np)
+    if not success:
+        st.error("Image encoding failed.")
+        return None, None, None, None, None
+    raw_bytes = encoded_image.tobytes()
 
     # Classification
     predicted_class = "Unknown"
     confidence = 0
     try:
-        result = CLIENT.infer(img_bytes, model_id="sinistroodonto/1")
-        if result and result.get("predictions"):
-            sorted_preds = sorted(result["predictions"], key=lambda p: p['confidence'], reverse=True)
-            top_pred = sorted_preds[0]
-            predicted_class_raw = top_pred['class']
-            confidence = round(top_pred['confidence'] * 100, 2)
+        classification_result = CLIENT.infer(raw_bytes, model_id="sinistroodonto/1")
+        if classification_result and classification_result.get('predictions'):
+            sorted_predictions = sorted(classification_result['predictions'], key=lambda p: p['confidence'], reverse=True)
+            top_prediction = sorted_predictions[0]
+            predicted_class_raw = top_prediction['class']
+            confidence = round(top_prediction['confidence'] * 100, 2)
             predicted_class = ROBOFLOW_CLASS_MAPPING.get(predicted_class_raw.lower(), "Unknown")
+        else:
+            return "Unknown", 0, None, None, 0
     except Exception as e:
-        st.error(f"Classification error: {e}")
+        st.error(f"Error during classification API call: {e}")
         return "Error", 0, None, None, 0
 
-    # Map class to segmentation model
-    seg_models = {
+    # Model IDs for disease-specific segmentation
+    disease_segmentation_model_ids = {
         'Calculus': 'data_teeth/3',
         'Data caries': 'caries-sfptw/1',
         'Gingivitis': 'data_teeth/3',
@@ -88,83 +88,101 @@ def predict(img):
 
     infected_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
     total_area_mask = np.zeros(img_shape[:2], dtype=np.uint8)
-    disease_model_id = seg_models.get(predicted_class)
 
-    # Disease Segmentation
+    # Infected Area Segmentation
+    disease_model_id = disease_segmentation_model_ids.get(predicted_class)
     if disease_model_id:
         try:
-            seg_result = CLIENT.infer(img_bytes, model_id=disease_model_id)
-            for pred in seg_result.get('predictions', []):
-                if pred.get("confidence", 0) > 0.1 and 'points' in pred:
-                    mask = create_mask_from_points(img_shape, pred['points'])
-                    infected_area_mask = cv2.bitwise_or(infected_area_mask, mask)
+            segmentation_result = CLIENT.infer(raw_bytes, model_id=disease_model_id)
+            if 'predictions' in segmentation_result:
+                for seg_pred in segmentation_result['predictions']:
+                    pred_conf = seg_pred.get('confidence', 0)
+                    if pred_conf > 0.1 and 'points' in seg_pred:
+                        points = seg_pred['points']
+                        if points:
+                            single_mask = create_mask_from_points(img_shape, points)
+                            infected_area_mask = cv2.bitwise_or(infected_area_mask, single_mask)
         except Exception as e:
-            st.error(f"{predicted_class} segmentation failed: {e}")
+            st.error(f"Error during '{predicted_class}' segmentation API call: {e}")
     elif predicted_class != 'Hypodontia':
-        st.warning(f"No segmentation model for: {predicted_class}")
+        st.warning(f"No specific segmentation model ID found for {predicted_class}. Infected area mask will be empty.")
 
-    # Total Area Segmentation
+    # Total Dental Area Segmentation
+    total_area_model_id = "dental-ai-yerxe/3"
     try:
-        mouth_result = CLIENT2.infer(img_bytes, model_id="dental-ai-yerxe/3")
-        for pred in mouth_result.get('predictions', []):
-            if pred.get("confidence", 0) > 0.4 and 'points' in pred:
-                mask = create_mask_from_points(img_shape, pred['points'])
-                total_area_mask = cv2.bitwise_or(total_area_mask, mask)
+        mouth_segmentation_result = CLIENT.infer(raw_bytes, model_id=total_area_model_id)
+        if 'predictions' in mouth_segmentation_result:
+            for mouth_seg_pred in mouth_segmentation_result.get('predictions', []):
+                pred_conf = mouth_seg_pred.get('confidence', 0)
+                if pred_conf > 0.4 and 'points' in mouth_seg_pred:
+                    mouth_points = mouth_seg_pred['points']
+                    if mouth_points:
+                        mouth_single_mask = create_mask_from_points(img_shape, mouth_points)
+                        total_area_mask = cv2.bitwise_or(total_area_mask, mouth_single_mask)
     except Exception as e:
-        st.error(f"Total mouth area segmentation failed: {e}")
+        st.error(f"Error during total area segmentation API call: {e}")
 
-    # Area Calculation
-    infected_and_total = cv2.bitwise_and(infected_area_mask, total_area_mask)
-    infected_px = np.count_nonzero(infected_and_total)
-    total_px = np.count_nonzero(total_area_mask)
+    # Calculate Infection % (corrected by overlapping with total mask)
+    logically_correct_infected_mask = cv2.bitwise_and(infected_area_mask, total_area_mask)
+    infected_area_pixels_corrected = np.count_nonzero(logically_correct_infected_mask)
+    total_area_pixels = np.count_nonzero(total_area_mask)
 
-    infected_percent = 0
-    if predicted_class == 'Hypodontia':
-        infected_percent = 0
-    elif total_px > 0:
-        infected_percent = (infected_px / total_px) * 100
-        infected_percent = min(max(infected_percent, 0.0), 100.0)
-    else:
-        st.warning("Total area is 0, cannot compute percentage.")
+    infected_area_percentage = 0
+    if total_area_pixels > 0 and predicted_class != 'Hypodontia':
+        infected_area_percentage = (float(infected_area_pixels_corrected) / float(total_area_pixels)) * 100.0
+        infected_area_percentage = max(0.0, min(infected_area_percentage, 100.0))
+    elif predicted_class == 'Hypodontia':
+        infected_area_percentage = 0
+    elif total_area_pixels == 0:
+        st.warning("Total dental area segmentation resulted in zero pixels. Cannot calculate percentage.")
+        infected_area_percentage = 0
 
-    return predicted_class, confidence, infected_area_mask, total_area_mask, infected_percent
+    return predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage
 
 
-# ----------------------- STREAMLIT UI -----------------------
-st.title("Automated Dental and Gum Health Detection WebApp")
+# --- Streamlit UI ---
+st.title('🦷 Automated Dental and Gum Health Detection WebApp')
 
 st.write(
-    "Upload a dental or gum image. The app will classify the disease, "
-    "segment infected areas, and calculate infection severity."
+    "Upload a clear dental image. This app detects possible dental issues, "
+    "highlights affected areas, and estimates infection severity."
 )
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("📷 Upload Image", type=["jpg", "jpeg", "png"])
 
-if uploaded_file:
+if uploaded_file is not None:
     try:
-        img = Image.open(uploaded_file)
-        img_np = np.array(img.convert("RGB"))
-        st.image(img_np, caption="Uploaded Image", use_container_width=True)
+        img = Image.open(uploaded_file).convert("RGB")
+        img_np = np.array(img)
 
-        predicted_class, confidence, infected_mask, total_mask, percent = predict(img)
+        st.image(img_np, caption="Uploaded Dental Image", use_container_width=True)
 
-        if predicted_class and infected_mask is not None:
-            st.subheader(f"Disease: {predicted_class}")
-            st.subheader(f"Confidence: {confidence}%")
-            st.subheader(f"Infected Area: {percent:.2f}%")
+        prediction_result = predict(img_np)
 
-            # Overlay Visualization
-            infected_bool = infected_mask.astype(bool)
-            total_bool = total_mask.astype(bool)
+        if prediction_result and all(val is not None for val in prediction_result):
+            predicted_class, confidence, infected_area_mask, total_area_mask, infected_area_percentage = prediction_result
 
-            color_overlay = np.zeros_like(img_np)
-            color_overlay[total_bool] = [0, 255, 0]       # Green
-            color_overlay[infected_bool] = [255, 0, 0]    # Red
+            st.subheader(f"🧠 Prediction: {predicted_class}")
+            st.subheader(f"📊 Confidence: {confidence}%")
+            st.subheader(f"🩸 Infected Area: {infected_area_percentage:.2f}%")
 
-            combined = cv2.addWeighted(img_np, 0.6, color_overlay, 0.4, 0)
-            st.image(combined, caption="Overlay: Red=Infected, Green=Dental Area", use_container_width=True)
+            infected_mask_bool = infected_area_mask.astype(bool)
+            total_mask_bool = total_area_mask.astype(bool)
+
+            color_mask_combined = np.zeros_like(img_np, dtype=np.uint8)
+            color_mask_combined[total_mask_bool] = [0, 255, 0]     # Green: total area
+            color_mask_combined[infected_mask_bool] = [255, 0, 0]  # Red: infected area
+
+            if color_mask_combined.shape == img_np.shape:
+                overlay = cv2.addWeighted(img_np, 0.6, color_mask_combined, 0.4, 0.0)
+                st.image(overlay, caption="🧩 Segmentation Overlay (Red = Infected, Green = Dental Area)", use_container_width=True)
+            else:
+                st.error("Shape mismatch between image and overlay. Showing original image.")
+                st.image(img_np, caption="Original Image", use_container_width=True)
+
         else:
-            st.error("Prediction failed.")
+            st.error("Prediction failed. Try with a clearer image or check logs above.")
+
     except Exception as e:
-        st.error(f"Processing error: {e}")
+        st.error(f"An error occurred while processing the image: {e}")
         st.exception(e)
