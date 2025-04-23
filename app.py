@@ -124,10 +124,11 @@ def predict(img):
         st.exception(e)
     if predicted_class == "Mouth Ulcer":
         infected_area_pixels_corrected = np.count_nonzero(infected_area_mask)
-        total_area_pixels = img_np.shape[0] * img_np.shape[1]  # or another conservative estimate
+        total_area_pixels = img_np.shape[0] * img_np.shape[1]  # conservative estimate
     else:
-        infected_area_pixels_corrected = np.count_nonzero(logically_correct_infected_mask)
+        infected_area_pixels_corrected = np.count_nonzero(infected_area_mask)
         total_area_pixels = np.count_nonzero(total_area_mask)
+
 
     if total_area_pixels > 0 and predicted_class != 'Hypodontia':
         infected_area_percentage = (float(infected_area_pixels_corrected) / float(total_area_pixels)) * 100.0
